@@ -84,30 +84,30 @@ npm install -D swagger-api-gen
 ## 命令行
 全局安装
 ```
-api url=http://172.27.17.123:8989/v2/api-docs
+api url=http://example.com/v2/api-docs
 ```
 本地安装
 ```
-npx api url=http://172.27.17.123:8989/v2/api-docs
+npx api url=http://example.com/v2/api-docs
 ```
 ## npm script使用
 1.配置package.json
 ```
 {
     "script": {
-        "api": "api url=http://172.27.17.123:8989/v2/api-docs"
+        "api": "api url=http://example.com/v2/api-docs"
     }
 }
 ```
 2.运行 `npm run api` 或 `yarn api`
 ## 完整示例
 ```
-api url=http://172.27.17.123:8989/v2/api-docs tarDir=./src/api fileName=index fileType=ts template='import request from "./request";' expandParams=true
+api url=http://example.com/v2/api-docs tarDir=./src/api fileName=index fileType=ts template='import request from "./request";' expandParams=true
 ```
 # 参数说明
 |参数|必传|说明|默认|示例|
 |----|----|----|----|----|
-|url|是|swagger api地址|-|url=http://172.27.17.123:8989/v2/api-docs|
+|url|是|swagger api地址|-|url=http://example.com/v2/api-docs|
 |tarDir|否|目标目录|当前目录|tarDir=./src/api|
 |fileName|否|生成文件名|swagger-api|fileName=index|
 |fileType|否|生成文件类型`js`或`ts`|ts|fileType=js|
