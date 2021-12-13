@@ -1,0 +1,28 @@
+{
+  "name": "swagger-api-generator",
+  "version": "1.0.0",
+  "description": "this tool generates fe api code by swagger api",
+  "main": "swagger-api-generator.js",
+  "bin": {
+    "api": "swagger-api-generator.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HandsomeWalker/swagger-api-generator.git"
+  },
+  "keywords": [
+    "swagger",
+    "api",
+    "generator",
+    "cli"
+  ],
+  "author": "dreamcreativehub@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/HandsomeWalker/swagger-api-generator/issues"
+  },
+  "homepage": "https://github.com/HandsomeWalker/swagger-api-generator#readme"
+}
