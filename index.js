@@ -2,7 +2,7 @@
 
 /**
  * api接口文件生成工具，可传5个命令行参数，可写入npm script方便执行
- * @param url 必传，swagger文档接口，如：http://172.27.17.123:8989/v2/api-docs
+ * @param url 必传，swagger文档接口，如：http://example.com/v2/api-docs
  * @param tarDir 可选，生成文件的目标目录，default: ./
  * @param fileName 可选，生成文件名，default: swagger-api
  * @param fileType 可选，生成ts还是js，default: ts
@@ -222,10 +222,6 @@ function getParamsFields({ parameters, data, params, finalComment, finalTypes })
 }
 /**
  * 统一生成模板
- * @param {*} path
- * @param {*} api
- * @returns a:电视
- * @returns b:电视放
  */
 function genTemplate(path, api) {
   const names = path.split('/');
