@@ -1,6 +1,6 @@
 {
   "name": "swagger-api-gen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "this tool generates fe api code by swagger api",
   "main": "index.js",
   "bin": {
