@@ -1,10 +1,10 @@
 {
-  "name": "swagger-api-generator",
+  "name": "swagger-api-gen",
   "version": "1.0.0",
   "description": "this tool generates fe api code by swagger api",
-  "main": "swagger-api-generator.js",
+  "main": "index.js",
   "bin": {
-    "api": "swagger-api-generator.js"
+    "api": "index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

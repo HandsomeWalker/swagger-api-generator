@@ -78,7 +78,7 @@ export const myHandsomeApiGET = (
 
 # 安装
 ```
-npm install --save swagger-api-generator
+npm install --save swagger-api-gen
 ```
 # 用法
 ## 命令行
