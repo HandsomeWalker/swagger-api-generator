@@ -7,7 +7,7 @@
     "api": "index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node index.js url=https://petstore.swagger.io/v2/swagger.json"
   },
   "repository": {
     "type": "git",

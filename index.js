@@ -15,6 +15,7 @@
 
 const fs = require('fs');
 const http = require('http');
+const https = require('https');
 const _path = require('path');
 
 const argvs = process.argv.slice(2);
@@ -77,8 +78,9 @@ function littleToBig(str = '') {
 }
 
 function request(options) {
+  const reqModule = /^https:\/\//.test(url) ? https : http;
   return new Promise((resolve, reject) => {
-    const req = http.request(url, options, (res) => {
+    const req = reqModule.request(url, options, (res) => {
       let chunk = '';
       res.setEncoding('utf-8');
       res.on('data', (data) => {
@@ -231,115 +233,120 @@ function genTemplate(path, api) {
     if (/-/g.test(item)) {
       temp = item.replace(/-(\w)/g, (m, $1) => $1.toUpperCase());
     } else if (/\{.+\}/g.test(item)) {
-      temp = '';
+      temp = 'By' + littleToBig(item.replace(/[{}]/g, ''));
     } else {
       temp = item.replace(/^\w/g, (m) => m.toUpperCase());
     }
     name += temp;
   }
   name = name.replace(/^\w/g, (m) => m.toLowerCase());
-  const method = Object.keys(api)[0];
-  const obj = api[method];
-  const tags = obj.tags[0];
-  let { description, parameters, summary, responses, consumes } = obj;
-  let showParamConfig = false;
-  // 路径参数
-  if (/\{\w+\}/g.test(path)) {
-    showParamConfig = true;
-    path = path.replace(/\{(\w+)\}/g, (m, $1) => "${paramConfig['" + $1 + "']}");
-    path = '`' + path + '`';
-  } else {
-    path = "'" + path + "'";
-  }
-  let isJsonData = true;
-  let params = '  params: {\n';
-  let data = '  data: {\n';
-  if (consumes) {
-    if (consumes[0] === 'application/json') {
-      data = '  data: {\n';
+  let contentJs = '', contentTs = '', contentType = '';
+  const methods = Object.keys(api);
+  methods.forEach(method => {
+    count++;
+    const obj = api[method];
+    const tags = obj.tags.join();
+    let { description, parameters, summary, responses, consumes } = obj;
+    let showParamConfig = false;
+    let handledPath = path;
+    // 路径参数
+    if (/\{\w+\}/g.test(handledPath)) {
+      showParamConfig = true;
+      handledPath = handledPath.replace(/\{(\w+)\}/g, (m, $1) => "${paramConfig['" + $1 + "']}");
+      handledPath = '`' + handledPath + '`';
+    } else {
+      handledPath = "'" + handledPath + "'";
     }
-    if (consumes[0] === 'application/x-www-form-urlencoded') {
-      isJsonData = false;
-      data = "\theaders: { 'Content-Type': 'application/x-www-form-urlencoded' },\n" + '  data: QS.stringify({\n';
+    let isJsonData = true;
+    let params = '  params: {\n';
+    let data = '  data: {\n';
+    if (consumes) {
+      if (consumes[0] === 'application/json') {
+        data = '  data: {\n';
+      }
+      if (consumes[0] === 'application/x-www-form-urlencoded') {
+        isJsonData = false;
+        data = "\theaders: { 'Content-Type': 'application/x-www-form-urlencoded' },\n" + '  data: QS.stringify({\n';
+      }
     }
-  }
-  let finalParams = '';
-  let finalTypes = '';
-  let finalComment = '';
-  let searchKey = '';
-  try {
-    searchKey = responses['200'].schema.originalRef;
-  } catch (e) {}
-  let finalResponse = getResponseFields(searchKey, {
-    contentJsDoc: '',
-    contentTypes: '',
-    contentTypesDoc: '',
-  });
-  if (!parameters) {
-    parameters = [];
-  }
-  let hasParams = false;
-  let hasData = false;
-  // 请求体参数
-  const paramsFields = getParamsFields({
-    parameters,
-    data,
-    params,
-    finalComment,
-    finalTypes,
-  });
-  hasParams = paramsFields.hasParams;
-  hasData = paramsFields.hasData;
-  params = paramsFields.params;
-  data = paramsFields.data;
-  finalComment = paramsFields.finalComment;
-  finalTypes = paramsFields.finalTypes;
-  params += '\t},\n';
-  data += isJsonData ? '\t},\n' : '\t}),\n';
+    let finalParams = '';
+    let finalTypes = '';
+    let finalComment = '';
+    let searchKey = '';
+    try {
+      searchKey = responses['200'].schema.originalRef;
+    } catch (e) { }
+    let finalResponse = getResponseFields(searchKey, {
+      contentJsDoc: '',
+      contentTypes: '',
+      contentTypesDoc: '',
+    });
+    if (!parameters) {
+      parameters = [];
+    }
+    let hasParams = false;
+    let hasData = false;
+    // 请求体参数
+    const paramsFields = getParamsFields({
+      parameters,
+      data,
+      params,
+      finalComment,
+      finalTypes,
+    });
+    hasParams = paramsFields.hasParams;
+    hasData = paramsFields.hasData;
+    params = paramsFields.params;
+    data = paramsFields.data;
+    finalComment = paramsFields.finalComment;
+    finalTypes = paramsFields.finalTypes;
+    params += '\t},\n';
+    data += isJsonData ? '\t},\n' : '\t}),\n';
 
-  if (hasParams || hasData) {
-    showParamConfig = true;
-  }
-  if (expandParams === 'false') {
-    hasParams && (finalParams += '  params: paramConfig,\n');
-    hasData && (finalParams += '  data: paramConfig,\n');
-  } else {
-    hasParams && (finalParams += params);
-    hasData && (finalParams += data);
-  }
-
-  return {
-    contentJs: `
+    if (hasParams || hasData) {
+      showParamConfig = true;
+    }
+    if (expandParams === 'false') {
+      hasParams && (finalParams += '  params: paramConfig,\n');
+      hasData && (finalParams += '  data: paramConfig,\n');
+    } else {
+      hasParams && (finalParams += params);
+      hasData && (finalParams += data);
+    }
+    contentJs += `
   /**
-   * ${summary}
+   * ${tags}-${summary}
   ${finalComment}${finalResponse.contentJsDoc}*/
   export const ${name}${method.toUpperCase()} = (paramConfig, customConfig = {}) => request({
-    url: ${path},
+    url: ${handledPath},
     method: '${method}',
   ${finalParams}...customConfig,\n});
-  `,
-    contentTs: `
+  `;
+    contentTs += `
   /**
-   * ${summary}
+   * ${tags}-${summary}
   ${finalComment}${finalResponse.contentJsDoc}*/
-  export const ${name}${method.toUpperCase()} = (${
-      showParamConfig ? 'paramConfig: ' + name + method.toUpperCase() + 'Props' : 'paramConfig?: ' + name + method.toUpperCase() + 'Props'
-    }, customConfig: CustomConfigProps = {}): ${finalResponse.contentTypes ? 'Promise<' + name + method.toUpperCase() + 'ResProps>' : 'Promise<any>'} => request${
-      finalResponse.contentTypes ? '<' + name + method.toUpperCase() + 'ResProps>' : '<any>'
-    }({
-    url: ${path},
+  export const ${name}${method.toUpperCase()} = (${showParamConfig ? 'paramConfig: ' + name + method.toUpperCase() + 'Props' : 'paramConfig?: ' + name + method.toUpperCase() + 'Props'
+      }, customConfig: CustomConfigProps = {}): ${finalResponse.contentTypes ? 'Promise<' + name + method.toUpperCase() + 'ResProps>' : 'Promise<any>'} => request${finalResponse.contentTypes ? '<' + name + method.toUpperCase() + 'ResProps>' : '<any>'
+      }({
+    url: ${handledPath},
     method: '${method}',
   ${finalParams}...customConfig,\n});
-  `,
-    contentType: `
+  `;
+    contentType += `
   /**
-   * ${summary}
+   * ${tags}-${summary}
   ${finalComment} */
   interface ${name}${method.toUpperCase()}Props extends anyFields {
   ${finalTypes}}
-  ${
-    finalResponse.contentTypes ? '/**\n\t' + finalResponse.contentTypesDoc + '*/\ninterface ' + name + method.toUpperCase() + 'ResProps extends anyFields {\n' + finalResponse.contentTypes + '}' : ''
-  }`,
+  ${finalResponse.contentTypes ? '/**\n\t' + finalResponse.contentTypesDoc + '*/\ninterface ' + name + method.toUpperCase() + 'ResProps extends anyFields {\n' + finalResponse.contentTypes + '}' : ''
+      }`;
+  });
+  
+  return {
+    contentJs,
+    contentTs,
+    contentType
   };
 }
 let definitionsObj = {};
@@ -374,7 +381,6 @@ function handleSwaggerApis(data) {
         contentType += contentObj.contentType;
       }
     } else {
-      count++;
       contentJs += contentObj.contentJs;
       contentTs += contentObj.contentTs;
       contentType += contentObj.contentType;
