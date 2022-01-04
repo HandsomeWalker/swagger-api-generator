@@ -150,69 +150,59 @@ function getParamsFields({ parameters, data, params, finalComment, finalTypes })
   let hasParams = false;
   let hasData = false;
   const parametersType = Object.prototype.toString.call(parameters);
-  if (parametersType === '[object Array]') {
-    // 请求体参数
-    for (const item of parameters) {
-      if (item.schema) {
-        if (item.schema.originalRef) {
-          getParamsFields({
-            parameters: definitionsObj[item.schema.originalRef].properties,
-            data,
-            params,
-            finalComment,
-            finalTypes,
-          });
-          continue;
-        }
-      }
-      if (item.in === 'query') {
-        if (params.includes(`'${item.name}': paramConfig['${item.name}']`)) {
-          continue;
-        }
-        hasParams = true;
-        params += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
-      } else if (item.in === 'body') {
-        if (data.includes(`'${item.name}': paramConfig['${item.name}']`)) {
-          continue;
-        }
-        hasData = true;
-        data += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
-      }
-      if (item.in === 'header') {
-        continue;
-      }
-      finalComment += ` * @param {${fieldTypeMap[item.type] ? fieldTypeMap[item.type] : 'any'}} ${item.name} description: ${item.description} | required: ${item.required} | type: ${item.type}\n`;
-      if (item.in === 'path') {
-        continue;
-      }
-      finalTypes += getTypeField(item);
-    }
-  } else if (parametersType === '[object Object]') {
+  if (parametersType === '[object Object]') {
+    let temp = [];
     for (const key in parameters) {
       const item = parameters[key];
-      if (item.in === 'query') {
-        if (params.includes(`'${item.name}': paramConfig['${item.name}']`)) {
-          continue;
-        }
-        hasParams = true;
-        params += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
-      } else if (item.in === 'body') {
-        if (data.includes(`'${item.name}': paramConfig['${item.name}']`)) {
-          continue;
-        }
-        hasData = true;
-        data += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
-      }
-      if (item.in === 'header') {
-        continue;
-      }
-      finalComment += ` * @param {${fieldTypeMap[item.type] ? fieldTypeMap[item.type] : 'any'}} ${item.name} description: ${item.description} | required: ${item.required} | type: ${item.type}\n`;
-      if (item.in === 'path') {
-        continue;
-      }
-      finalTypes += getTypeField(item);
+      temp.push(item);
     }
+    parameters = temp;
+    temp = null;
   }
+  for (const item of parameters) {
+    if (parametersType === '[object Array]' && item.schema) {
+      if (item.schema.originalRef) {
+        getParamsFields({
+          parameters: definitionsObj[item.schema.originalRef].properties,
+          data,
+          params,
+          finalComment,
+          finalTypes,
+        });
+        continue;
+      }
+    }
+    if (item.in === 'header') {
+      continue;
+    }
+    if (item.in === 'path') {
+      continue;
+    }
+    if (item.in === 'query') {
+      if (params.includes(`'${item.name}': paramConfig['${item.name}']`)) {
+        continue;
+      }
+      hasParams = true;
+      params += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
+    }
+    if (item.in === 'body') {
+      if (data.includes(`'${item.name}': paramConfig['${item.name}']`)) {
+        continue;
+      }
+      hasData = true;
+      data += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
+    }
+    if (item.in === 'formData') {
+      if (data.includes(`'${item.name}': paramConfig['${item.name}']`)) {
+        continue;
+      }
+      hasData = true;
+      data += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
+    }
+    finalComment += ` * @param {${fieldTypeMap[item.type] ? fieldTypeMap[item.type] : 'any'}} ${item.name} description: ${item.description} | required: ${item.required} | type: ${item.type}\n`;
+    finalTypes += getTypeField(item);
+  }
+
   return {
     hasParams,
     hasData,
@@ -267,6 +257,9 @@ function genTemplate(path, api) {
       if (consumes[0] === 'application/x-www-form-urlencoded') {
         isJsonData = false;
         data = "\theaders: { 'Content-Type': 'application/x-www-form-urlencoded' },\n" + '  data: QS.stringify({\n';
+      }
+      if (consumes[0] === 'multipart/form-data') {
+        data = "\theaders: { 'Content-Type': 'multipart/form-data' },\n" + '  data: {\n';
       }
     }
     let finalParams = '';
@@ -350,53 +343,6 @@ function genTemplate(path, api) {
   };
 }
 let definitionsObj = {};
-function handleSwaggerApis(data) {
-  let contentJs = template;
-  let contentTs = `import './${fileName}Types';\n` + template + '\ntype CustomConfigProps = any; // 修改这里为自定义配置支持TS提示\n';
-  let contentType = `interface anyFields { [key: string]: any }`;
-
-  const jsonPath = `${tarDir}/swagger-apis.json`;
-  const jsPath = `${tarDir}/${fileName}.js`;
-  const tsPath = `${tarDir}/${fileName}.ts`;
-  const typePath = `${tarDir}/${fileName}Types.ts`;
-  const isExists = fs.existsSync(jsonPath);
-  let existsData;
-
-  const pathObj = data.paths;
-  definitionsObj = data.definitions;
-
-  if (isExists) {
-    existsData = require(jsonPath);
-    contentJs = fs.readFileSync(jsPath, { encoding: 'utf-8' });
-    contentTs = fs.readFileSync(tsPath, { encoding: 'utf-8' });
-    contentType = fs.readFileSync(typePath, { encoding: 'utf-8' });
-  }
-  let contentObj = {};
-  for (const path in pathObj) {
-    contentObj = genTemplate(path, pathObj[path]);
-    if (isExists) {
-      if (!(path in existsData)) {
-        contentJs += contentObj.contentJs;
-        contentTs += contentObj.contentTs;
-        contentType += contentObj.contentType;
-      }
-    } else {
-      contentJs += contentObj.contentJs;
-      contentTs += contentObj.contentTs;
-      contentType += contentObj.contentType;
-    }
-  }
-  // cache &&
-  //   fs.writeFileSync(jsonPath, JSON.stringify(pathObj));
-  if (fileType === 'ts') {
-    createFile(tsPath, contentTs);
-    createFile(typePath, contentType);
-  } else if (fileType === 'js') {
-    createFile(jsPath, contentJs);
-  }
-  console.log('***************api文件生成成功了(^_^)*****************');
-  console.log(`[本次新增接口数量]: ${count}`);
-}
 // 递归创建目录 同步方法
 function mkdirsSync(dirname) {
   if (fs.existsSync(dirname)) {
@@ -408,13 +354,43 @@ function mkdirsSync(dirname) {
     }
   }
 }
-
+// 创建相应文件
 function createFile(filePath, data) {
   const isFileExists = fs.existsSync(filePath);
   if (!isFileExists && tarDir !== '.') {
     mkdirsSync(tarDir);
   }
   fs.writeFileSync(filePath, data);
+}
+// 解析api数据入口
+function handleSwaggerApis(data) {
+  let contentJs = template;
+  let contentTs = `import './${fileName}Types';\n` + template + '\ntype CustomConfigProps = any; // 修改这里为自定义配置支持TS提示\n';
+  let contentType = `interface anyFields { [key: string]: any }`;
+
+  const jsPath = `${tarDir}/${fileName}.js`;
+  const tsPath = `${tarDir}/${fileName}.ts`;
+  const typePath = `${tarDir}/${fileName}Types.ts`;
+
+  const pathObj = data.paths;
+  definitionsObj = data.definitions;
+
+  let contentObj = {};
+  for (const path in pathObj) {
+    contentObj = genTemplate(path, pathObj[path]);
+    contentJs += contentObj.contentJs;
+    contentTs += contentObj.contentTs;
+    contentType += contentObj.contentType;
+  }
+
+  if (fileType === 'ts') {
+    createFile(tsPath, contentTs);
+    createFile(typePath, contentType);
+  } else if (fileType === 'js') {
+    createFile(jsPath, contentJs);
+  }
+  console.log('***************api文件生成成功了(^_^)*****************');
+  console.log(`[本次新增接口数量]: ${count}`);
 }
 
 request(config)
