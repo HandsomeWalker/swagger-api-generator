@@ -8,6 +8,7 @@
  * @param fileType 可选，生成ts还是js，default: ts
  * @param template 可选，生成的ts或者js文件顶部自定义的代码段，default: ''
  * @param expandParams 可选，是否展开传参，default: false
+ * @param filter 可选，通过正则匹配接口path来筛选需要生成的接口，default: ''
  * @author HandsomeWalker
  * @example
  * node swagger-api-generator.js url=http://foo/bar tarDir=./foo/bar fileName=service fileType=ts template='import request from "./funcRequest";import QS from "qs";'
@@ -24,7 +25,8 @@ let url,
   fileName,
   fileType,
   template,
-  expandParams = 'false';
+  expandParams = 'false',
+  filter;
 for (const item of argvs) {
   if (/url=.+/g.test(item)) {
     url = item.replace(/url=/g, '');
@@ -43,6 +45,9 @@ for (const item of argvs) {
   }
   if (/expandParams=.+/g.test(item)) {
     expandParams = item.replace(/expandParams=/g, '');
+  }
+  if (/filter=.+/g.test(item)) {
+    filter = item.replace(/filter=/g, '');
   }
 }
 typeof tarDir === 'undefined' && (tarDir = '.');
@@ -335,7 +340,7 @@ function genTemplate(path, api) {
   ${finalResponse.contentTypes ? '/**\n\t' + finalResponse.contentTypesDoc + '*/\ninterface ' + name + method.toUpperCase() + 'ResProps extends anyFields {\n' + finalResponse.contentTypes + '}' : ''
       }`;
   });
-  
+
   return {
     contentJs,
     contentTs,
@@ -367,6 +372,14 @@ function handleSwaggerApis(data) {
   let contentJs = template;
   let contentTs = `import './${fileName}Types';\n` + template + '\ntype CustomConfigProps = any; // 修改这里为自定义配置支持TS提示\n';
   let contentType = `interface anyFields { [key: string]: any }`;
+  let reg
+  try {
+    reg = new RegExp(filter);
+  } catch (err) {
+    reg = new RegExp()
+    console.log('***************正则匹配出错(-_-!)*****************');
+    console.log(err);
+  }
 
   const jsPath = `${tarDir}/${fileName}.js`;
   const tsPath = `${tarDir}/${fileName}.ts`;
@@ -377,6 +390,9 @@ function handleSwaggerApis(data) {
 
   let contentObj = {};
   for (const path in pathObj) {
+    if (!reg.test(path)) {
+      continue;
+    }
     contentObj = genTemplate(path, pathObj[path]);
     contentJs += contentObj.contentJs;
     contentTs += contentObj.contentTs;
@@ -390,12 +406,12 @@ function handleSwaggerApis(data) {
     createFile(jsPath, contentJs);
   }
   console.log('***************api文件生成成功了(^_^)*****************');
-  console.log(`[本次新增接口数量]: ${count}`);
+  console.log(`[接口数量]: ${count}`);
 }
 
 request(config)
   .then(handleSwaggerApis)
   .catch((err) => {
-    console.log(err);
     console.log('***************出错啦(-_-!)请重试或砸电脑*****************');
+    console.log(err);
   });
