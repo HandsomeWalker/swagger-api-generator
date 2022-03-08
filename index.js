@@ -136,7 +136,7 @@ function getResponseFields(searchKey, resObj) {
       continue;
     }
     const { description, type, originalRef } = item;
-    if (originalRef) {
+    if (originalRef && originalRef !== searchKey) {
       return getResponseFields(originalRef, resObj);
     } else {
       resObj.contentJsDoc += ` * @returns ${key} description: ${description} | type: ${type}\n`;

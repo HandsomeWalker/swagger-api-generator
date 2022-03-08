@@ -102,7 +102,7 @@ npx api url=http://example.com/v2/api-docs
 2.运行 `npm run api` 或 `yarn api`
 ## 完整示例
 ```
-api url=http://example.com/v2/api-docs tarDir=./src/api fileName=index fileType=ts template='import request from "./request";' expandParams=true
+api url=http://example.com/v2/api-docs tarDir=./src/api fileName=index fileType=ts template='import request from "./request";' expandParams=true filter=pet
 ```
 # 参数说明
 |参数|必传|说明|默认|示例|
@@ -113,4 +113,16 @@ api url=http://example.com/v2/api-docs tarDir=./src/api fileName=index fileType=
 |fileType|否|生成文件类型`js`或`ts`|ts|fileType=js|
 |template|否|顶部自定义的代码段|-|template='import request from "./request";'|
 |expandParams|否|是否展开传参|false|expandParams=true|
-|filter|否|通过正则匹配接口path来筛选需要生成的接口|-|filter=''|
+|filter|否|通过正则匹配接口path来筛选需要生成的接口|-|filter=pet|
+
+# 注意
+使用 `git for windows` 终端时，参数首位的 `/` 会被解析为 `$GIT_HOME/`
+
+解决方案如下
+```
+filter=//pet
+
+MSYS_NO_PATHCONV=1 filter=/pet/find
+
+filter=\\/pet/find
+```
