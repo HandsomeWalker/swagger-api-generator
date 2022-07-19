@@ -165,22 +165,19 @@ function getParamsFields({ parameters, data, params, finalComment, finalTypes })
     temp = null;
   }
   for (const item of parameters) {
-    if (parametersType === '[object Array]' && item.schema) {
-      if (item.schema.originalRef) {
-        getParamsFields({
-          parameters: definitionsObj[item.schema.originalRef].properties,
-          data,
-          params,
-          finalComment,
-          finalTypes,
-        });
-        continue;
-      }
-    }
+    // if (parametersType === '[object Array]' && item.schema) {
+    //   if (item.schema.originalRef) {
+    //     getParamsFields({
+    //       parameters: definitionsObj[item.schema.originalRef].properties,
+    //       data,
+    //       params,
+    //       finalComment,
+    //       finalTypes,
+    //     });
+    //     continue;
+    //   }
+    // }
     if (item.in === 'header') {
-      continue;
-    }
-    if (item.in === 'path') {
       continue;
     }
     if (item.in === 'query') {
@@ -274,11 +271,11 @@ function genTemplate(path, api) {
     try {
       searchKey = responses['200'].schema.originalRef;
     } catch (e) { }
-    let finalResponse = getResponseFields(searchKey, {
-      contentJsDoc: '',
-      contentTypes: '',
-      contentTypesDoc: '',
-    });
+    // let finalResponse = getResponseFields(searchKey, {
+    //   contentJsDoc: '',
+    //   contentTypes: '',
+    //   contentTypesDoc: '',
+    // });
     if (!parameters) {
       parameters = [];
     }
@@ -314,7 +311,7 @@ function genTemplate(path, api) {
     contentJs += `
   /**
    * ${tags}-${summary}
-  ${finalComment}${finalResponse.contentJsDoc}*/
+  ${finalComment}*/
   export const ${name}${method.toUpperCase()} = (paramConfig, customConfig = {}) => request({
     url: ${handledPath},
     method: '${method}',
@@ -323,10 +320,9 @@ function genTemplate(path, api) {
     contentTs += `
   /**
    * ${tags}-${summary}
-  ${finalComment}${finalResponse.contentJsDoc}*/
+  ${finalComment}*/
   export const ${name}${method.toUpperCase()} = (${showParamConfig ? 'paramConfig: ' + name + method.toUpperCase() + 'Props' : 'paramConfig?: ' + name + method.toUpperCase() + 'Props'
-      }, customConfig: CustomConfigProps = {}): ${finalResponse.contentTypes ? 'Promise<' + name + method.toUpperCase() + 'ResProps>' : 'Promise<any>'} => request${finalResponse.contentTypes ? '<' + name + method.toUpperCase() + 'ResProps>' : '<any>'
-      }({
+      }, customConfig: CustomConfigProps = {}) => request({
     url: ${handledPath},
     method: '${method}',
   ${finalParams}...customConfig,\n});
@@ -337,8 +333,7 @@ function genTemplate(path, api) {
   ${finalComment} */
   interface ${name}${method.toUpperCase()}Props extends anyFields {
   ${finalTypes}}
-  ${finalResponse.contentTypes ? '/**\n\t' + finalResponse.contentTypesDoc + '*/\ninterface ' + name + method.toUpperCase() + 'ResProps extends anyFields {\n' + finalResponse.contentTypes + '}' : ''
-      }`;
+  `;
   });
 
   return {
