@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * api接口文件生成工具，可传5个命令行参数，可写入npm script方便执行
+ * api接口文件生成工具，可写入npm script方便执行
  * @param url 必传，swagger文档接口，如：http://example.com/v2/api-docs
  * @param tarDir 可选，生成文件的目标目录，default: ./
  * @param fileName 可选，生成文件名，default: swagger-api
@@ -9,9 +9,10 @@
  * @param template 可选，生成的ts或者js文件顶部自定义的代码段，default: ''
  * @param expandParams 可选，是否展开传参，default: false
  * @param filter 可选，通过正则匹配接口path来筛选需要生成的接口，default: ''
+ * @param mock 可选，是否生成mock请求, default: false
  * @author HandsomeWalker
  * @example
- * node swagger-api-generator.js url=http://foo/bar tarDir=./foo/bar fileName=service fileType=ts template='import request from "./funcRequest";import QS from "qs";'
+ * npx api url=http://foo/bar tarDir=./foo/bar fileName=service fileType=ts template='import request from "./funcRequest";import QS from "qs";'
  */
 
 const fs = require('fs');
@@ -20,42 +21,24 @@ const https = require('https');
 const _path = require('path');
 
 const argvs = process.argv.slice(2);
-let url,
-  tarDir,
-  fileName,
-  fileType,
-  template,
-  expandParams = 'false',
-  filter;
-for (const item of argvs) {
-  if (/url=.+/g.test(item)) {
-    url = item.replace(/url=/g, '');
-  }
-  if (/tarDir=.+/g.test(item)) {
-    tarDir = item.replace(/tarDir=/g, '');
-  }
-  if (/fileName=.+/g.test(item)) {
-    fileName = item.replace(/fileName=/g, '');
-  }
-  if (/fileType=.+/g.test(item)) {
-    fileType = item.replace(/fileType=/g, '');
-  }
-  if (/template=.+/g.test(item)) {
-    template = item.replace(/template=/g, '');
-  }
-  if (/expandParams=.+/g.test(item)) {
-    expandParams = item.replace(/expandParams=/g, '');
-  }
-  if (/filter=.+/g.test(item)) {
-    filter = item.replace(/filter=/g, '');
+let configObj = {
+  url: '',
+  tarDir: '.',
+  fileName: 'swagger-api',
+  fileType: 'ts',
+  template: '',
+  expandParams: 'false',
+  filter: '',
+  mock: 'false'
+};
+for (const key in configObj) {
+  for (const item of argvs) {
+    if (new RegExp(`${key}=.+`, 'g').test(item)) {
+      configObj[key] = item.replace(new RegExp(`${key}=`, 'g'), '');
+    }
   }
 }
-typeof tarDir === 'undefined' && (tarDir = '.');
-typeof fileName === 'undefined' && (fileName = 'swagger-api');
-if (typeof fileType === 'undefined' || (fileType !== 'ts' && fileType !== 'js')) {
-  fileType = 'ts';
-}
-typeof template === 'undefined' && (template = '');
+
 let count = 0;
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36';
@@ -83,9 +66,9 @@ function littleToBig(str = '') {
 }
 
 function request(options) {
-  const reqModule = /^https:\/\//.test(url) ? https : http;
+  const reqModule = /^https:\/\//.test(configObj.url) ? https : http;
   return new Promise((resolve, reject) => {
-    const req = reqModule.request(url, options, (res) => {
+    const req = reqModule.request(configObj.url, options, (res) => {
       let chunk = '';
       res.setEncoding('utf-8');
       res.on('data', (data) => {
@@ -301,7 +284,7 @@ function genTemplate(path, api) {
     if (hasParams || hasData) {
       showParamConfig = true;
     }
-    if (expandParams === 'false') {
+    if (configObj.expandParams === 'false') {
       hasParams && (finalParams += '  params: paramConfig,\n');
       hasData && (finalParams += '  data: paramConfig,\n');
     } else {
@@ -357,28 +340,28 @@ function mkdirsSync(dirname) {
 // 创建相应文件
 function createFile(filePath, data) {
   const isFileExists = fs.existsSync(filePath);
-  if (!isFileExists && tarDir !== '.') {
-    mkdirsSync(tarDir);
+  if (!isFileExists && configObj.tarDir !== '.') {
+    mkdirsSync(configObj.tarDir);
   }
   fs.writeFileSync(filePath, data);
 }
 // 解析api数据入口
 function handleSwaggerApis(data) {
-  let contentJs = template;
-  let contentTs = `import './${fileName}Types';\n` + template + '\ntype CustomConfigProps = any; // 修改这里为自定义配置支持TS提示\n';
+  let contentJs = `import request from './client';\n` + configObj.template;
+  let contentTs = `import request, { RequestConfig } from './client';\nimport './${configObj.fileName}Types';\n` + configObj.template + '\ntype CustomConfigProps = RequestConfig; // 修改这里为自定义配置支持TS提示\n';
   let contentType = `interface anyFields { [key: string]: any }`;
   let reg
   try {
-    reg = new RegExp(filter);
+    reg = new RegExp(configObj.filter);
   } catch (err) {
     reg = new RegExp()
     console.log('***************正则匹配出错(-_-!)*****************');
     console.log(err);
   }
 
-  const jsPath = `${tarDir}/${fileName}.js`;
-  const tsPath = `${tarDir}/${fileName}.ts`;
-  const typePath = `${tarDir}/${fileName}Types.ts`;
+  const jsPath = `${configObj.tarDir}/${configObj.fileName}.js`;
+  const tsPath = `${configObj.tarDir}/${configObj.fileName}.ts`;
+  const typePath = `${configObj.tarDir}/${configObj.fileName}Types.ts`;
 
   const pathObj = data.paths;
   definitionsObj = data.definitions;
@@ -394,11 +377,21 @@ function handleSwaggerApis(data) {
     contentType += contentObj.contentType;
   }
 
-  if (fileType === 'ts') {
+  if (configObj.fileType === 'ts') {
     createFile(tsPath, contentTs);
     createFile(typePath, contentType);
-  } else if (fileType === 'js') {
+    createFile(`${configObj.tarDir}/client.ts`, fs.readFileSync('./snipeets/client.ts', 'utf-8'));
+    if (configObj.mock === 'true') {
+      createFile(`${configObj.tarDir}/handsomeChar.js`, fs.readFileSync('./snipeets/handsomeChar.js', 'utf-8'));
+      createFile(`${configObj.tarDir}/mock.ts`, fs.readFileSync('./snipeets/mock.ts', 'utf-8'));
+    }
+  } else if (configObj.fileType === 'js') {
     createFile(jsPath, contentJs);
+    createFile(`${configObj.tarDir}/client.js`, fs.readFileSync('./snipeets/client.js', 'utf-8'));
+    if (configObj.mock === 'true') {
+      createFile(`${configObj.tarDir}/handsomeChar.js`, fs.readFileSync('./snipeets/handsomeChar.js', 'utf-8'));
+      createFile(`${configObj.tarDir}/mock.js`, fs.readFileSync('./snipeets/mock.js', 'utf-8'));
+    }
   }
   console.log('***************api文件生成成功了(^_^)*****************');
   console.log(`[接口数量]: ${count}`);
