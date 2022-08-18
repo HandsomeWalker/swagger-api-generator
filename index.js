@@ -380,17 +380,17 @@ function handleSwaggerApis(data) {
   if (configObj.fileType === 'ts') {
     createFile(tsPath, contentTs);
     createFile(typePath, contentType);
-    createFile(`${configObj.tarDir}/client.ts`, fs.readFileSync('./snipeets/client.ts', 'utf-8'));
+    createFile(`${configObj.tarDir}/client.ts`, fs.readFileSync(_path.resolve(__dirname, './snipeets/client.ts'), 'utf-8'));
     if (configObj.mock === 'true') {
-      createFile(`${configObj.tarDir}/handsomeChar.js`, fs.readFileSync('./snipeets/handsomeChar.js', 'utf-8'));
-      createFile(`${configObj.tarDir}/mock.ts`, fs.readFileSync('./snipeets/mock.ts', 'utf-8'));
+      createFile(`${configObj.tarDir}/handsomeChar.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/handsomeChar.js'), 'utf-8'));
+      createFile(`${configObj.tarDir}/mock.ts`, fs.readFileSync(_path.resolve(__dirname, './snipeets/mock.ts'), 'utf-8'));
     }
   } else if (configObj.fileType === 'js') {
     createFile(jsPath, contentJs);
-    createFile(`${configObj.tarDir}/client.js`, fs.readFileSync('./snipeets/client.js', 'utf-8'));
+    createFile(`${configObj.tarDir}/client.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/client.js'), 'utf-8'));
     if (configObj.mock === 'true') {
-      createFile(`${configObj.tarDir}/handsomeChar.js`, fs.readFileSync('./snipeets/handsomeChar.js', 'utf-8'));
-      createFile(`${configObj.tarDir}/mock.js`, fs.readFileSync('./snipeets/mock.js', 'utf-8'));
+      createFile(`${configObj.tarDir}/handsomeChar.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/handsomeChar.js'), 'utf-8'));
+      createFile(`${configObj.tarDir}/mock.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/mock.js'), 'utf-8'));
     }
   }
   console.log('***************api文件生成成功了(^_^)*****************');
