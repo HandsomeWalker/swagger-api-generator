@@ -1,4 +1,4 @@
-import handsomeChar from './handsomeChar';
+import handsomeChar from './handsomeChar.js';
 
 function getRandomString() {
   return handsomeChar(`${Math.random() * 100}`);
