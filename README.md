@@ -112,7 +112,7 @@ api url=http://example.com/v2/api-docs tarDir=./src/api fileName=index fileType=
 |fileName|否|生成文件名|swagger-api|fileName=index|
 |fileType|否|生成文件类型`js`或`ts`|ts|fileType=js|
 |template|否|顶部自定义的代码段|-|template='import request from "./request";'|
-|expandParams|否|是否展开传参|false|expandParams=true|
+|expandParams|否|是否展开传参|true|expandParams=true|
 |filter|否|通过正则匹配接口path来筛选需要生成的接口|-|filter=pet|
 |mock|否|是否生成mock请求|false|mock=true|
 
