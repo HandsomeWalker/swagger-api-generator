@@ -72,4 +72,4 @@ function handsomeChar(rule) {
   return res;
 }
 
-module.exports = handsomeChar;
+export default handsomeChar;

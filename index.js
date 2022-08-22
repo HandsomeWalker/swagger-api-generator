@@ -7,7 +7,7 @@
  * @param fileName 可选，生成文件名，default: swagger-api
  * @param fileType 可选，生成ts还是js，default: ts
  * @param template 可选，生成的ts或者js文件顶部自定义的代码段，default: ''
- * @param expandParams 可选，是否展开传参，default: false
+ * @param expandParams 可选，是否展开传参，default: true
  * @param filter 可选，通过正则匹配接口path来筛选需要生成的接口，default: ''
  * @param mock 可选，是否生成mock请求, default: false
  * @author HandsomeWalker
@@ -27,7 +27,7 @@ let configObj = {
   fileName: 'swagger-api',
   fileType: 'ts',
   template: '',
-  expandParams: 'false',
+  expandParams: 'true',
   filter: '',
   mock: 'false'
 };
@@ -171,11 +171,12 @@ function getParamsFields({ parameters, data, params, finalComment, finalTypes })
       params += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
     }
     if (item.in === 'body') {
-      if (data.includes(`'${item.name}': paramConfig['${item.name}']`)) {
+      // if (data.includes(`'${item.name}': paramConfig['${item.name}']`)) {
+      if (data.includes(`...paramConfig['${item.name}'],`)) {
         continue;
       }
       hasData = true;
-      data += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
+      data += `\t\t...paramConfig['${item.name}'],\n`;
     }
     if (item.in === 'formData') {
       if (data.includes(`'${item.name}': paramConfig['${item.name}']`)) {
