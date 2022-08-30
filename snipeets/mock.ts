@@ -1,7 +1,7 @@
 import handsomeChar from './handsomeChar.js';
 
 function getRandomString() {
-  return handsomeChar(`${Math.random() * 100}`);
+  return handsomeChar(`${Math.floor(Math.random() * 100)}`);
 }
 
 function getRandomObj() {
@@ -24,6 +24,7 @@ function getRandomArr() {
   for (let i = 0; i < Math.floor(Math.random() * 10); i++) {
     arr.push({
       id: i,
+      index: i + 1,
       ...getRandomObj()
     });
   }
