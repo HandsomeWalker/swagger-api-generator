@@ -1,4 +1,4 @@
-import handsomeChar from './handsomeChar.js';
+import handsomeChar from "./handsomeChar.js";
 
 function getRandomString() {
   return handsomeChar(`${Math.floor(Math.random() * 100)}`);
@@ -25,55 +25,64 @@ function getRandomArr() {
     arr.push({
       id: i,
       index: i + 1,
-      ...getRandomObj()
+      ...getRandomObj(),
     });
   }
   return arr;
 }
 
-export const mockRequest = function (
-  paramConfig?: any,
-  customConfig?: any,
-  mockData?: any
-): Promise<{ code: number; data: any; msg: string }> {
+export const customMockRequest = function <T = any>(
+  mockRes: T,
+  mockErrorRes?: T,
+  ...args: any
+): Promise<T> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (Math.random() < 0.001) {
         reject("网络错误");
       }
       if (Math.random() >= 0.001 && Math.random() < 0.002) {
-        resolve({
-          code: 500,
-          data: null,
-          msg: "服务器错误",
-        });
+        resolve(mockErrorRes as T);
       }
-      resolve({
-        code: 200,
-        data: mockData,
-        msg: "success",
-      });
+      resolve(mockRes);
     }, Math.random() * 1000);
   });
+};
+
+export const mockRequest = function (
+  paramConfig?: any,
+  customConfig?: any,
+  mockData?: any
+): Promise<{ code: number; data: any; msg: string }> {
+  return customMockRequest<{ code: number; data: any; msg: string }>(
+    { code: 200, data: mockData, msg: "success" },
+    { code: 500, data: null, msg: "服务器错误" }
+  );
 };
 
 export const mockArray = function (paramConfig?: any, customConfig?: any) {
   return mockRequest(paramConfig, customConfig, getRandomArr());
 };
 
-export const mockTablePageData = function (paramConfig?: any, customConfig?: any) {
+export const mockTablePageData = function (
+  paramConfig?: any,
+  customConfig?: any
+) {
   const arr = getRandomArr();
-  return mockRequest(paramConfig, customConfig, { page: { total: arr.length, current: 1 }, data: arr });
-}
+  return mockRequest(paramConfig, customConfig, {
+    page: { total: arr.length, current: 1 },
+    data: arr,
+  });
+};
 
 export const mockObject = function (paramConfig?: any, customConfig?: any) {
-  return mockRequest(paramConfig, customConfig, getRandomObj);
-}
+  return mockRequest(paramConfig, customConfig, getRandomObj());
+};
 
 export const mockString = function (paramConfig?: any, customConfig?: any) {
   return mockRequest(paramConfig, customConfig, getRandomString());
-}
+};
 
 export const mockNumber = function (paramConfig?: any, customConfig?: any) {
   return mockRequest(paramConfig, customConfig, Math.floor(Math.random()));
-}
+};

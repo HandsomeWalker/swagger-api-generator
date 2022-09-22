@@ -31,30 +31,33 @@ function getRandomArr() {
   return arr;
 }
 
-export const mockRequest = function (
-  paramConfig,
-  customConfig,
-  mockData
-){
+export const customMockRequest = function(
+  mockRes,
+  mockErrorRes,
+  ...args
+) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (Math.random() < 0.001) {
         reject("网络错误");
       }
       if (Math.random() >= 0.001 && Math.random() < 0.002) {
-        resolve({
-          code: 500,
-          data: null,
-          msg: "服务器错误",
-        });
+        resolve(mockErrorRes);
       }
-      resolve({
-        code: 200,
-        data: mockData,
-        msg: "success",
-      });
+      resolve(mockRes);
     }, Math.random() * 1000);
   });
+};
+
+export const mockRequest = function (
+  paramConfig,
+  customConfig,
+  mockData
+){
+  return customMockRequest(
+    { code: 200, data: mockData, msg: "success" },
+    { code: 500, data: null, msg: "服务器错误" }
+  );
 };
 
 export const mockArray = function (paramConfig, customConfig) {
@@ -67,7 +70,7 @@ export const mockTablePageData = function (paramConfig, customConfig) {
 }
 
 export const mockObject = function (paramConfig, customConfig) {
-  return mockRequest(paramConfig, customConfig, getRandomObj);
+  return mockRequest(paramConfig, customConfig, getRandomObj());
 }
 
 export const mockString = function (paramConfig, customConfig) {
