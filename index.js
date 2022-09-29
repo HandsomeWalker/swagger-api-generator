@@ -9,6 +9,7 @@
  * @param template 可选，生成的ts或者js文件顶部自定义的代码段，default: ''
  * @param expandParams 可选，是否展开传参，default: true
  * @param filter 可选，通过正则匹配接口path来筛选需要生成的接口，default: ''
+ * @param client 可选，是否生成请求客户端，default: true
  * @param mock 可选，是否生成mock请求, default: false
  * @author HandsomeWalker
  * @example
@@ -29,6 +30,7 @@ let configObj = {
   template: '',
   expandParams: 'true',
   filter: '',
+  client: 'true',
   mock: 'false'
 };
 for (const key in configObj) {
@@ -381,14 +383,18 @@ function handleSwaggerApis(data) {
   if (configObj.fileType === 'ts') {
     createFile(tsPath, contentTs);
     createFile(typePath, contentType);
-    createFile(`${configObj.tarDir}/client.ts`, fs.readFileSync(_path.resolve(__dirname, './snipeets/client.ts'), 'utf-8'));
+    if (configObj.client === 'true') {
+      createFile(`${configObj.tarDir}/client.ts`, fs.readFileSync(_path.resolve(__dirname, './snipeets/client.ts'), 'utf-8'));
+    }
     if (configObj.mock === 'true') {
       createFile(`${configObj.tarDir}/handsomeChar.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/handsomeChar.js'), 'utf-8'));
       createFile(`${configObj.tarDir}/mock.ts`, fs.readFileSync(_path.resolve(__dirname, './snipeets/mock.ts'), 'utf-8'));
     }
   } else if (configObj.fileType === 'js') {
     createFile(jsPath, contentJs);
-    createFile(`${configObj.tarDir}/client.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/client.js'), 'utf-8'));
+    if (configObj.client === 'true') {
+      createFile(`${configObj.tarDir}/client.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/client.js'), 'utf-8'));
+    }
     if (configObj.mock === 'true') {
       createFile(`${configObj.tarDir}/handsomeChar.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/handsomeChar.js'), 'utf-8'));
       createFile(`${configObj.tarDir}/mock.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/mock.js'), 'utf-8'));
