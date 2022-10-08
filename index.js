@@ -13,7 +13,7 @@
  * @param mock 可选，是否生成mock请求, default: false
  * @author HandsomeWalker
  * @example
- * npx api url=http://foo/bar tarDir=./foo/bar fileName=service fileType=ts template='import request from "./funcRequest";import QS from "qs";'
+ * npx api url=http://foo/bar tarDir=./foo/bar fileName=service fileType=ts template='import request from "./funcRequest";import QS from "qs";' expandParams=true filter=pet client=true mock=false
  */
 
 const fs = require('fs');
@@ -33,6 +33,20 @@ let configObj = {
   client: 'true',
   mock: 'false'
 };
+if (argvs.includes('help') || argvs.includes('-h') || argvs.includes('--help')) {
+  console.log(`
+  url 必传，swagger文档接口，如：http://example.com/v2/api-docs
+  tarDir 可选，生成文件的目标目录，default: ./
+  fileName 可选，生成文件名，default: swagger-api
+  fileType 可选，生成ts还是js，default: ts
+  template 可选，生成的ts或者js文件顶部自定义的代码段，default: ''
+  expandParams 可选，是否展开传参，default: true
+  filter 可选，通过正则匹配接口path来筛选需要生成的接口，default: ''
+  client 可选，是否生成请求客户端，default: true
+  mock 可选，是否生成mock请求, default: false
+  `);
+  return;
+}
 for (const key in configObj) {
   for (const item of argvs) {
     if (new RegExp(`${key}=.+`, 'g').test(item)) {
