@@ -9,7 +9,7 @@
  * @param template 可选，生成的ts或者js文件顶部自定义的代码段，default: ''
  * @param expandParams 可选，是否展开传参，default: true
  * @param filter 可选，通过正则匹配接口path来筛选需要生成的接口，default: ''
- * @param client 可选，是否生成请求客户端，default: true
+ * @param client 可选，是否生成请求客户端，default: false
  * @param mock 可选，是否生成mock请求, default: false
  * @author HandsomeWalker
  * @example
@@ -30,7 +30,7 @@ let configObj = {
   template: '',
   expandParams: 'true',
   filter: '',
-  client: 'true',
+  client: 'false',
   mock: 'false'
 };
 if (argvs.includes('help') || argvs.includes('-h') || argvs.includes('--help')) {
@@ -42,7 +42,7 @@ if (argvs.includes('help') || argvs.includes('-h') || argvs.includes('--help')) 
   template 可选，生成的ts或者js文件顶部自定义的代码段，default: ''
   expandParams 可选，是否展开传参，default: true
   filter 可选，通过正则匹配接口path来筛选需要生成的接口，default: ''
-  client 可选，是否生成请求客户端，default: true
+  client 可选，是否生成请求客户端，default: false
   mock 可选，是否生成mock请求, default: false
   `);
   return;
