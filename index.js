@@ -16,24 +16,28 @@
  * npx api url=http://foo/bar tarDir=./foo/bar fileName=service fileType=ts template='import request from "./funcRequest";import QS from "qs";' expandParams=true filter=pet client=true mock=false
  */
 
-const fs = require('fs');
-const http = require('http');
-const https = require('https');
-const _path = require('path');
+const fs = require("fs");
+const http = require("http");
+const https = require("https");
+const _path = require("path");
 
 const argvs = process.argv.slice(2);
 let configObj = {
-  url: '',
-  tarDir: '.',
-  fileName: 'swagger-api',
-  fileType: 'ts',
-  template: '',
-  expandParams: 'true',
-  filter: '',
-  client: 'false',
-  mock: 'false'
+  url: "",
+  tarDir: ".",
+  fileName: "swagger-api",
+  fileType: "ts",
+  template: "",
+  expandParams: "true",
+  filter: "",
+  client: "false",
+  mock: "false",
 };
-if (argvs.includes('help') || argvs.includes('-h') || argvs.includes('--help')) {
+if (
+  argvs.includes("help") ||
+  argvs.includes("-h") ||
+  argvs.includes("--help")
+) {
   console.log(`
   url 必传，swagger文档接口，如：http://example.com/v2/api-docs
   tarDir 可选，生成文件的目标目录，default: ./
@@ -49,19 +53,20 @@ if (argvs.includes('help') || argvs.includes('-h') || argvs.includes('--help')) 
 }
 for (const key in configObj) {
   for (const item of argvs) {
-    if (new RegExp(`${key}=.+`, 'g').test(item)) {
-      configObj[key] = item.replace(new RegExp(`${key}=`, 'g'), '');
+    if (new RegExp(`${key}=.+`, "g").test(item)) {
+      configObj[key] = item.replace(new RegExp(`${key}=`, "g"), "");
     }
   }
 }
 
 let count = 0;
 
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36';
+const UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36";
 const config = {
-  method: 'GET',
+  method: "GET",
   headers: {
-    'user-agent': UA,
+    "user-agent": UA,
   },
 };
 
@@ -71,13 +76,13 @@ const config = {
  * @param {string} sep 分隔符
  * @returns {string} 转换结果
  */
-function lineToCamel(str = '', sep = '-') {
-  const reg = new RegExp(`(^|${sep})(\\w)`, 'g');
+function lineToCamel(str = "", sep = "-") {
+  const reg = new RegExp(`(^|${sep})(\\w)`, "g");
   // return str.replace(/(^|-)(\w)/g, (m, $1, $2) => $2.toUpperCase());
   return str.replace(reg, (m, $1, $2) => $2.toUpperCase());
 }
 // 小驼峰转大驼峰
-function littleToBig(str = '') {
+function littleToBig(str = "") {
   return str.replace(/^(\w)/g, (m, $1) => $1.toUpperCase());
 }
 
@@ -85,40 +90,42 @@ function request(options) {
   const reqModule = /^https:\/\//.test(configObj.url) ? https : http;
   return new Promise((resolve, reject) => {
     const req = reqModule.request(configObj.url, options, (res) => {
-      let chunk = '';
-      res.setEncoding('utf-8');
-      res.on('data', (data) => {
+      let chunk = "";
+      res.setEncoding("utf-8");
+      res.on("data", (data) => {
         chunk += data;
       });
-      res.on('end', () => {
+      res.on("end", () => {
         resolve(JSON.parse(chunk));
       });
     });
-    req.on('error', (err) => {
+    req.on("error", (err) => {
       reject(err);
     });
     req.end();
   });
 }
 const fieldTypeMap = {
-  string: 'string | number',
-  integer: 'string | number',
-  array: 'any[]',
-  object: 'any',
-  boolean: 'boolean',
-  ref: 'any',
+  string: "string | number",
+  integer: "string | number",
+  array: "any[]",
+  object: "any",
+  boolean: "boolean",
+  ref: "any",
 };
 const responseTypeMap = {
-  string: 'string',
-  integer: 'number',
-  array: 'any[]',
-  object: 'any',
-  boolean: 'boolean',
-  ref: 'any',
+  string: "string",
+  integer: "number",
+  array: "any[]",
+  object: "any",
+  boolean: "boolean",
+  ref: "any",
 };
 // 获取每行type字段
 function getTypeField(item) {
-  return `  '${item.name}'${item.required ? '' : '?'}: ${fieldTypeMap[item.type] ? fieldTypeMap[item.type] : 'any'};\n`;
+  return `  '${item.name}'${item.required ? "" : "?"}: ${
+    fieldTypeMap[item.type] ? fieldTypeMap[item.type] : "any"
+  };\n`;
 }
 // 获取响应字段配置
 function getResponseFields(searchKey, resObj) {
@@ -140,21 +147,29 @@ function getResponseFields(searchKey, resObj) {
     } else {
       resObj.contentJsDoc += ` * @returns ${key} description: ${description} | type: ${type}\n`;
       if (!resObj.contentTypesDoc.includes(key)) {
-        resObj.contentTypesDoc += ` * @param {${responseTypeMap[type] || 'any'}} ${key} description: ${description} | type: ${type}\n`;
+        resObj.contentTypesDoc += ` * @param {${
+          responseTypeMap[type] || "any"
+        }} ${key} description: ${description} | type: ${type}\n`;
       }
       if (!resObj.contentTypes.includes(key)) {
-        resObj.contentTypes += `${key}: ${responseTypeMap[type] || 'any'};\n`;
+        resObj.contentTypes += `${key}: ${responseTypeMap[type] || "any"};\n`;
       }
     }
   }
   return resObj;
 }
 // 获取请求体字段配置
-function getParamsFields({ parameters, data, params, finalComment, finalTypes }) {
+function getParamsFields({
+  parameters,
+  data,
+  params,
+  finalComment,
+  finalTypes,
+}) {
   let hasParams = false;
   let hasData = false;
   const parametersType = Object.prototype.toString.call(parameters);
-  if (parametersType === '[object Object]') {
+  if (parametersType === "[object Object]") {
     let temp = [];
     for (const key in parameters) {
       const item = parameters[key];
@@ -176,17 +191,17 @@ function getParamsFields({ parameters, data, params, finalComment, finalTypes })
     //     continue;
     //   }
     // }
-    if (item.in === 'header') {
+    if (item.in === "header") {
       continue;
     }
-    if (item.in === 'query') {
+    if (item.in === "query") {
       if (params.includes(`'${item.name}': paramConfig['${item.name}']`)) {
         continue;
       }
       hasParams = true;
       params += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
     }
-    if (item.in === 'body') {
+    if (item.in === "body") {
       // if (data.includes(`'${item.name}': paramConfig['${item.name}']`)) {
       if (data.includes(`...paramConfig['${item.name}'],`)) {
         continue;
@@ -194,14 +209,18 @@ function getParamsFields({ parameters, data, params, finalComment, finalTypes })
       hasData = true;
       data += `\t\t...paramConfig['${item.name}'],\n`;
     }
-    if (item.in === 'formData') {
+    if (item.in === "formData") {
       if (data.includes(`'${item.name}': paramConfig['${item.name}']`)) {
         continue;
       }
       hasData = true;
       data += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
     }
-    finalComment += ` * @param {${fieldTypeMap[item.type] ? fieldTypeMap[item.type] : 'any'}} ${item.name} description: ${item.description} | required: ${item.required} | type: ${item.type}\n`;
+    finalComment += ` * @param {${
+      fieldTypeMap[item.type] ? fieldTypeMap[item.type] : "any"
+    }} ${item.name} description: ${item.description} | required: ${
+      item.required
+    } | type: ${item.type}\n`;
     finalTypes += getTypeField(item);
   }
 
@@ -218,23 +237,25 @@ function getParamsFields({ parameters, data, params, finalComment, finalTypes })
  * 统一生成模板
  */
 function genTemplate(path, api) {
-  const names = path.split('/');
-  let name = '';
+  const names = path.split("/");
+  let name = "";
   for (const item of names) {
     let temp;
     if (/-/g.test(item)) {
       temp = item.replace(/-(\w)/g, (m, $1) => $1.toUpperCase());
     } else if (/\{.+\}/g.test(item)) {
-      temp = 'By' + littleToBig(item.replace(/[{}]/g, ''));
+      temp = "By" + littleToBig(item.replace(/[{}]/g, ""));
     } else {
       temp = item.replace(/^\w/g, (m) => m.toUpperCase());
     }
     name += temp;
   }
   name = name.replace(/^\w/g, (m) => m.toLowerCase());
-  let contentJs = '', contentTs = '', contentType = '';
+  let contentJs = "",
+    contentTs = "",
+    contentType = "";
   const methods = Object.keys(api);
-  methods.forEach(method => {
+  methods.forEach((method) => {
     count++;
     const obj = api[method];
     const tags = obj.tags.join();
@@ -244,33 +265,40 @@ function genTemplate(path, api) {
     // 路径参数
     if (/\{\w+\}/g.test(handledPath)) {
       showParamConfig = true;
-      handledPath = handledPath.replace(/\{(\w+)\}/g, (m, $1) => "${paramConfig['" + $1 + "']}");
-      handledPath = '`' + handledPath + '`';
+      handledPath = handledPath.replace(
+        /\{(\w+)\}/g,
+        (m, $1) => "${paramConfig['" + $1 + "']}"
+      );
+      handledPath = "`" + handledPath + "`";
     } else {
       handledPath = "'" + handledPath + "'";
     }
     let isJsonData = true;
-    let params = '  params: {\n';
-    let data = '  data: {\n';
+    let params = "  params: {\n";
+    let data = "  data: {\n";
     if (consumes) {
-      if (consumes[0] === 'application/json') {
-        data = '  data: {\n';
+      if (consumes[0] === "application/json") {
+        data = "  data: {\n";
       }
-      if (consumes[0] === 'application/x-www-form-urlencoded') {
+      if (consumes[0] === "application/x-www-form-urlencoded") {
         isJsonData = false;
-        data = "\theaders: { 'Content-Type': 'application/x-www-form-urlencoded' },\n" + '  data: QS.stringify({\n';
+        data =
+          "\theaders: { 'Content-Type': 'application/x-www-form-urlencoded' },\n" +
+          "  data: QS.stringify({\n";
       }
-      if (consumes[0] === 'multipart/form-data') {
-        data = "\theaders: { 'Content-Type': 'multipart/form-data' },\n" + '  data: {\n';
+      if (consumes[0] === "multipart/form-data") {
+        data =
+          "\theaders: { 'Content-Type': 'multipart/form-data' },\n" +
+          "  data: {\n";
       }
     }
-    let finalParams = '';
-    let finalTypes = '';
-    let finalComment = '';
-    let searchKey = '';
+    let finalParams = "";
+    let finalTypes = "";
+    let finalComment = "";
+    let searchKey = "";
     try {
-      searchKey = responses['200'].schema.originalRef;
-    } catch (e) { }
+      searchKey = responses["200"].schema.originalRef;
+    } catch (e) {}
     // let finalResponse = getResponseFields(searchKey, {
     //   contentJsDoc: '',
     //   contentTypes: '',
@@ -295,15 +323,15 @@ function genTemplate(path, api) {
     data = paramsFields.data;
     finalComment = paramsFields.finalComment;
     finalTypes = paramsFields.finalTypes;
-    params += '\t},\n';
-    data += isJsonData ? '\t},\n' : '\t}),\n';
+    params += "\t},\n";
+    data += isJsonData ? "\t},\n" : "\t}),\n";
 
     if (hasParams || hasData) {
       showParamConfig = true;
     }
-    if (configObj.expandParams === 'false') {
-      hasParams && (finalParams += '  params: paramConfig,\n');
-      hasData && (finalParams += '  data: paramConfig,\n');
+    if (configObj.expandParams === "false") {
+      hasParams && (finalParams += "  params: paramConfig,\n");
+      hasData && (finalParams += "  data: paramConfig,\n");
     } else {
       hasParams && (finalParams += params);
       hasData && (finalParams += data);
@@ -321,8 +349,11 @@ function genTemplate(path, api) {
   /**
    * ${tags}-${summary}
   ${finalComment}*/
-  export const ${name}${method.toUpperCase()} = (${showParamConfig ? 'paramConfig: ' + name + method.toUpperCase() + 'Props' : 'paramConfig?: ' + name + method.toUpperCase() + 'Props'
-      }, customConfig: CustomConfigProps = {}) => request({
+  export const ${name}${method.toUpperCase()} = (${
+      showParamConfig
+        ? "paramConfig: " + name + method.toUpperCase() + "Props"
+        : "paramConfig?: " + name + method.toUpperCase() + "Props"
+    }, customConfig: CustomConfigProps = {}) => request({
     url: ${handledPath},
     method: '${method}',
   ${finalParams}...customConfig,\n});
@@ -339,7 +370,7 @@ function genTemplate(path, api) {
   return {
     contentJs,
     contentTs,
-    contentType
+    contentType,
   };
 }
 let definitionsObj = {};
@@ -357,7 +388,7 @@ function mkdirsSync(dirname) {
 // 创建相应文件
 function createFile(filePath, data) {
   const isFileExists = fs.existsSync(filePath);
-  if (!isFileExists && configObj.tarDir !== '.') {
+  if (!isFileExists && configObj.tarDir !== ".") {
     mkdirsSync(configObj.tarDir);
   }
   fs.writeFileSync(filePath, data);
@@ -365,14 +396,17 @@ function createFile(filePath, data) {
 // 解析api数据入口
 function handleSwaggerApis(data) {
   let contentJs = `import request from './client';\n` + configObj.template;
-  let contentTs = `import request, { RequestConfig } from './client';\nimport './${configObj.fileName}Types';\n` + configObj.template + '\ntype CustomConfigProps = RequestConfig; // 修改这里为自定义配置支持TS提示\n';
+  let contentTs =
+    `import request, { RequestConfig } from './client';\nimport './${configObj.fileName}Types';\n` +
+    configObj.template +
+    "\ntype CustomConfigProps = RequestConfig; // 修改这里为自定义配置支持TS提示\n";
   let contentType = `interface anyFields { [key: string]: any }`;
-  let reg
+  let reg;
   try {
     reg = new RegExp(configObj.filter);
   } catch (err) {
-    reg = new RegExp()
-    console.log('***************正则匹配出错(-_-!)*****************');
+    reg = new RegExp();
+    console.log("***************正则匹配出错(-_-!)*****************");
     console.log(err);
   }
 
@@ -394,33 +428,48 @@ function handleSwaggerApis(data) {
     contentType += contentObj.contentType;
   }
 
-  if (configObj.fileType === 'ts') {
+  if (configObj.fileType === "ts") {
     createFile(tsPath, contentTs);
     createFile(typePath, contentType);
-    if (configObj.client === 'true') {
-      createFile(`${configObj.tarDir}/client.ts`, fs.readFileSync(_path.resolve(__dirname, './snipeets/client.ts'), 'utf-8'));
-    }
-    if (configObj.mock === 'true') {
-      createFile(`${configObj.tarDir}/handsomeChar.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/handsomeChar.js'), 'utf-8'));
-      createFile(`${configObj.tarDir}/mock.ts`, fs.readFileSync(_path.resolve(__dirname, './snipeets/mock.ts'), 'utf-8'));
-    }
-  } else if (configObj.fileType === 'js') {
+  } else if (configObj.fileType === "js") {
     createFile(jsPath, contentJs);
-    if (configObj.client === 'true') {
-      createFile(`${configObj.tarDir}/client.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/client.js'), 'utf-8'));
-    }
-    if (configObj.mock === 'true') {
-      createFile(`${configObj.tarDir}/handsomeChar.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/handsomeChar.js'), 'utf-8'));
-      createFile(`${configObj.tarDir}/mock.js`, fs.readFileSync(_path.resolve(__dirname, './snipeets/mock.js'), 'utf-8'));
-    }
   }
-  console.log('***************api文件生成成功了(^_^)*****************');
+  console.log("***************api文件生成成功了(^_^)*****************");
   console.log(`[接口数量]: ${count}`);
 }
 
 request(config)
   .then(handleSwaggerApis)
   .catch((err) => {
-    console.log('***************出错啦(-_-!)请重试或砸电脑*****************');
+    console.log("***************出错啦(-_-!)请重试或砸电脑*****************");
     console.log(err);
+  })
+  .finally(() => {
+    if (["ts", "js"].includes(configObj.fileType)) {
+      if (configObj.client === "true") {
+        createFile(
+          `${configObj.tarDir}/client.${configObj.fileType}`,
+          fs.readFileSync(
+            _path.resolve(__dirname, `./snipeets/client.${configObj.fileType}`),
+            "utf-8"
+          )
+        );
+      }
+      if (configObj.mock === "true") {
+        createFile(
+          `${configObj.tarDir}/handsomeChar.js`,
+          fs.readFileSync(
+            _path.resolve(__dirname, "./snipeets/handsomeChar.js"),
+            "utf-8"
+          )
+        );
+        createFile(
+          `${configObj.tarDir}/mock.${configObj.fileType}`,
+          fs.readFileSync(
+            _path.resolve(__dirname, `./snipeets/mock.${configObj.fileType}`),
+            "utf-8"
+          )
+        );
+      }
+    }
   });
