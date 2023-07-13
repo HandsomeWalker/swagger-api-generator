@@ -21,7 +21,7 @@ function getRandomObj() {
 
 function getRandomArr() {
   let arr: any[] = [];
-  for (let i = 0; i < Math.floor(Math.random() * 10); i++) {
+  for (let i = 0; i < Math.floor(Math.random() * 1000); i++) {
     arr.push({
       id: i,
       index: i + 1,
@@ -53,11 +53,15 @@ export const mockRequest = function (
   paramConfig?: any,
   customConfig?: any,
   mockData?: any
-): Promise<{ code: number; data: any; msg: string }> {
-  return customMockRequest<{ code: number; data: any; msg: string }>(
-    { code: 200, data: mockData, msg: "success" },
-    { code: 500, data: null, msg: "服务器错误" }
-  );
+): Promise<{ code: number; data: any; msg: string } | any> {
+  if (customConfig.getResponse) {
+    return customMockRequest<any>(mockData, null);
+  } else {
+    return customMockRequest<{ code: number; data: any; msg: string }>(
+      { code: 200, data: mockData, msg: "success" },
+      { code: 500, data: null, msg: "服务器错误" }
+    );
+  }
 };
 
 export const mockArray = function (paramConfig?: any, customConfig?: any) {

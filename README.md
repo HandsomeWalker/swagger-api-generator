@@ -102,20 +102,21 @@ npx api url=http://example.com/v2/api-docs
 2.运行 `npm run api` 或 `yarn api`
 ## 完整示例
 ```
-api url=http://example.com/v2/api-docs tarDir=./src/api fileName=index fileType=ts template='import request from "./request";' expandParams=true filter=pet client=true mock=true
+api url=http://example.com/v2/api-docs tarDir=./src/api fileName=index fileType=ts template='import request from "./request";' expandParams=true filter=pet client=true mock=true module=true
 ```
 # 参数说明
 |参数|必传|说明|默认|示例|
 |----|----|----|----|----|
 |url|是|swagger api地址|-|url=http://example.com/v2/api-docs|
 |tarDir|否|目标目录|当前目录|tarDir=./src/api|
-|fileName|否|生成文件名|swagger-api|fileName=index|
+|fileName|否|生成文件名，当module选项为true时不生效|swagger-api|fileName=index|
 |fileType|否|生成文件类型`js`或`ts`|ts|fileType=js|
 |template|否|顶部自定义的代码段|-|template='import request from "./request";'|
 |expandParams|否|是否展开传参|true|expandParams=true|
 |filter|否|通过正则匹配接口path来筛选需要生成的接口|-|filter=pet|
 |client|否|是否生成请求客户端|false|client=true|
 |mock|否|是否生成mock请求|false|mock=true|
+|module|否|是否分模块|false|module=true|
 
 # 注意
 使用 `git for windows` 终端时，参数首位的 `/` 会被解析为 `$GIT_HOME/`
