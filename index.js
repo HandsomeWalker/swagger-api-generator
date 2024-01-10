@@ -454,7 +454,7 @@ request(config)
   .then((data) => {
     const pathObj = data.paths;
     definitionsObj = data.definitions;
-    if (configObj.module) {
+    if (configObj.module === "true") {
       // 如果module选项为true
       let modules = {};
       for (const path in pathObj) {
