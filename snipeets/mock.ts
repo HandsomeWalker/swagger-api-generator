@@ -1,5 +1,12 @@
 import handsomeChar from "./handsomeChar.js";
 
+interface anyProps {
+  [key: string]: any;
+}
+interface customConfigProps extends anyProps {
+  getResponse?: boolean;
+}
+
 function getRandomString() {
   return handsomeChar(`${Math.floor(Math.random() * 100)}`);
 }
@@ -31,19 +38,23 @@ function getRandomArr() {
   return arr;
 }
 
-export const customMockRequest = function <T = any>(
+const customMockRequest = function <T = any>(
   mockRes: T,
   mockErrorRes?: T,
-  ...args: any
+  paramConfig?: any
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
+      console.log("%cmock参数:", "color:blue", paramConfig);
       if (Math.random() < 0.001) {
+        console.log("%cmock请求失败", "color:red");
         reject("网络错误");
       }
       if (Math.random() >= 0.001 && Math.random() < 0.002) {
+        console.log("%cmock请求失败:", "color:red", mockErrorRes);
         resolve(mockErrorRes as T);
       }
+      console.log("%cmock请求结果:", "color:green", mockRes);
       resolve(mockRes);
     }, Math.random() * 1000);
   });
@@ -51,42 +62,59 @@ export const customMockRequest = function <T = any>(
 
 export const mockRequest = function (
   paramConfig?: any,
-  customConfig?: any,
-  mockData?: any
+  mockData?: any,
+  customConfig?: customConfigProps
 ): Promise<{ code: number; data: any; msg: string } | any> {
-  if (customConfig.getResponse) {
-    return customMockRequest<any>(mockData, null);
-  } else {
+  if (customConfig?.getResponse) {
     return customMockRequest<{ code: number; data: any; msg: string }>(
       { code: 200, data: mockData, msg: "success" },
-      { code: 500, data: null, msg: "服务器错误" }
+      { code: 500, data: null, msg: "服务器错误" },
+      paramConfig
     );
+  } else {
+    return customMockRequest<any>(mockData, null, paramConfig);
   }
 };
 
-export const mockArray = function (paramConfig?: any, customConfig?: any) {
-  return mockRequest(paramConfig, customConfig, getRandomArr());
+export const mockArray = function (
+  paramConfig?: any,
+  customConfig?: customConfigProps
+) {
+  return mockRequest(paramConfig, getRandomArr(), customConfig);
 };
 
 export const mockTablePageData = function (
   paramConfig?: any,
-  customConfig?: any
+  customConfig?: customConfigProps
 ) {
   const arr = getRandomArr();
-  return mockRequest(paramConfig, customConfig, {
-    page: { total: arr.length, current: 1 },
-    data: arr,
-  });
+  return mockRequest(
+    paramConfig,
+    {
+      page: { total: arr.length, current: 1 },
+      data: arr,
+    },
+    customConfig
+  );
 };
 
-export const mockObject = function (paramConfig?: any, customConfig?: any) {
-  return mockRequest(paramConfig, customConfig, getRandomObj());
+export const mockObject = function (
+  paramConfig?: any,
+  customConfig?: customConfigProps
+) {
+  return mockRequest(paramConfig, getRandomObj(), customConfig);
 };
 
-export const mockString = function (paramConfig?: any, customConfig?: any) {
-  return mockRequest(paramConfig, customConfig, getRandomString());
+export const mockString = function (
+  paramConfig?: any,
+  customConfig?: customConfigProps
+) {
+  return mockRequest(paramConfig, getRandomString(), customConfig);
 };
 
-export const mockNumber = function (paramConfig?: any, customConfig?: any) {
-  return mockRequest(paramConfig, customConfig, Math.floor(Math.random()));
+export const mockNumber = function (
+  paramConfig?: any,
+  customConfig?: customConfigProps
+) {
+  return mockRequest(paramConfig, Math.floor(Math.random()), customConfig);
 };
