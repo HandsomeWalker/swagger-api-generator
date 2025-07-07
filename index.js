@@ -3,11 +3,11 @@
 /**
  * api接口文件生成工具，可写入npm script方便执行
  * @param url 必传，swagger文档接口，如：http://example.com/v2/api-docs
- * @param tarDir 可选，生成文件的目标目录，default: ./
+ * @param tarDir 可选，生成文件的目标目录，default: .swagger-api
  * @param fileName 可选，生成文件名，当module选项为true时不生效，default: swagger-api
  * @param fileType 可选，生成ts还是js，default: ts
  * @param template 可选，生成的ts或者js文件顶部自定义的代码段，default: ''
- * @param expandParams 可选，是否展开传参，default: true
+ * @param expandParams 可选，是否展开传参，default: false
  * @param filter 可选，通过正则匹配接口path来筛选需要生成的接口，default: ''
  * @param client 可选，是否生成请求客户端，default: false
  * @param mock 可选，是否生成mock请求, default: false
@@ -25,11 +25,11 @@ const _path = require("path");
 const argvs = process.argv.slice(2);
 let configObj = {
   url: "",
-  tarDir: ".",
+  tarDir: ".swagger-api",
   fileName: "swagger-api",
   fileType: "ts",
   template: "",
-  expandParams: "true",
+  expandParams: "false",
   filter: "",
   client: "false",
   mock: "false",
@@ -42,11 +42,11 @@ if (
 ) {
   console.log(`
   url 必传，swagger文档接口，如：http://example.com/v2/api-docs
-  tarDir 可选，生成文件的目标目录，default: ./
+  tarDir 可选，生成文件的目标目录，default: .swagger-api
   fileName 可选，生成文件名，default: swagger-api
   fileType 可选，生成ts还是js，default: ts
   template 可选，生成的ts或者js文件顶部自定义的代码段，default: ''
-  expandParams 可选，是否展开传参，default: true
+  expandParams 可选，是否展开传参，default: false
   filter 可选，通过正则匹配接口path来筛选需要生成的接口，default: ''
   client 可选，是否生成请求客户端，default: false
   mock 可选，是否生成mock请求, default: false

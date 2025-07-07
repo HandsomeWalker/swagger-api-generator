@@ -1,13 +1,13 @@
 {
   "name": "swagger-api-gen",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "this tool generates fe api code by swagger api",
   "main": "index.js",
   "bin": {
     "api": "index.js"
   },
   "scripts": {
-    "test": "node index.js url=https://petstore.swagger.io/v2/swagger.json tarDir=services mock=true client=true module=true"
+    "test": "node index.js url=https://petstore.swagger.io/v2/swagger.json mock=true client=true module=true"
   },
   "repository": {
     "type": "git",
