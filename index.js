@@ -329,14 +329,18 @@ function genTemplate(path, api) {
       showParamConfig = true;
     }
     if (configObj.expandParams === "false") {
-      const body = parameters.find((item) => item.in === "body");
+      const body = parameters.find((item) => item.in === "body") || {};
       hasParams && (finalParams += "  params: paramConfig.query,\n");
       hasData &&
         (finalParams += `  data: ${
           consumes?.[0] === "multipart/form-data" ||
           consumes?.[0] === "application/x-www-form-urlencoded"
             ? "objToFormData(paramConfig.formData)"
-            : `paramConfig.body['${body.name}']`
+            : `${
+                body?.name
+                  ? `paramConfig.body['${body?.name}']`
+                  : "paramConfig.body"
+              }`
         },\n`);
       finalParams += headers;
     } else {
@@ -548,7 +552,7 @@ async function requestSchema() {
 
 function main() {
   requestApiMethod();
-  // requestSchema();
+  requestSchema();
 }
 
 main();
