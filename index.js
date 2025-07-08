@@ -329,12 +329,12 @@ function genTemplate(path, api) {
       showParamConfig = true;
     }
     if (configObj.expandParams === "false") {
-      const body = parameters.find((item) => item.in === "body") || {};
+      const body = parameters.find((item) => item.in === "body");
+      const formData = parameters.find((item) => item.in === "formData");
       hasParams && (finalParams += "  params: paramConfig.query,\n");
       hasData &&
         (finalParams += `  data: ${
-          consumes?.[0] === "multipart/form-data" ||
-          consumes?.[0] === "application/x-www-form-urlencoded"
+          formData
             ? "objToFormData(paramConfig.formData)"
             : `${
                 body?.name
@@ -366,7 +366,7 @@ function genTemplate(path, api) {
         : "paramConfig?: any"
     }, customConfig: CustomConfigProps = {}) =>
   request<${
-    responses["200"]
+    responses?.["200"]?.schema
       ? `paths['${path}']['${method}']['responses']['200']['schema']`
       : "any"
   }>({
