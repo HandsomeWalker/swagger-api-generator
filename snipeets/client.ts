@@ -63,8 +63,8 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-function request(requestConfig: RequestConfig) {
-  return axiosInstance.request(requestConfig);
+function request<ResponseType>(requestConfig: RequestConfig) {
+  return axiosInstance.request<ResponseType>(requestConfig);
 }
 
 export default request;

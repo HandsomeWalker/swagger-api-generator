@@ -21,6 +21,10 @@ const fs = require("fs");
 const http = require("http");
 const https = require("https");
 const _path = require("path");
+const openapiTs = require("openapi-typescript").default;
+const { littleToBig } = require("./utils.js");
+const { create } = require("domain");
+const prettier = require("prettier");
 
 const argvs = process.argv.slice(2);
 let configObj = {
@@ -73,22 +77,6 @@ const config = {
     "user-agent": UA,
   },
 };
-
-/**
- * 有分隔符的字符串转大驼峰
- * @param {string} str 字符串
- * @param {string} sep 分隔符
- * @returns {string} 转换结果
- */
-function lineToCamel(str = "", sep = "-") {
-  const reg = new RegExp(`(^|${sep})(\\w)`, "g");
-  // return str.replace(/(^|-)(\w)/g, (m, $1, $2) => $2.toUpperCase());
-  return str.replace(reg, (m, $1, $2) => $2.toUpperCase());
-}
-// 小驼峰转大驼峰
-function littleToBig(str = "") {
-  return str.replace(/^(\w)/g, (m, $1) => $1.toUpperCase());
-}
 
 function request(options) {
   const reqModule = /^https:\/\//.test(configObj.url) ? https : http;
@@ -271,7 +259,7 @@ function genTemplate(path, api) {
       showParamConfig = true;
       handledPath = handledPath.replace(
         /\{(\w+)\}/g,
-        (m, $1) => "${paramConfig['" + $1 + "']}"
+        (m, $1) => "${paramConfig.path['" + $1 + "']}"
       );
       handledPath = "`" + handledPath + "`";
     } else {
@@ -280,17 +268,24 @@ function genTemplate(path, api) {
     let isJsonData = true;
     let params = "  params: {\n";
     let data = "  data: {\n";
+    let headers = "";
     if (consumes) {
       if (consumes[0] === "application/json") {
         data = "  data: {\n";
       }
-      if (consumes[0] === "application/x-www-form-urlencoded") {
-        isJsonData = false;
-        data =
-          "\theaders: { 'Content-Type': 'application/x-www-form-urlencoded' },\n" +
-          "  data: QS.stringify({\n";
-      }
-      if (consumes[0] === "multipart/form-data") {
+      // if (consumes[0] === "application/x-www-form-urlencoded") {
+      //   isJsonData = false;
+      //   headers =
+      //     "\theaders: { 'Content-Type': 'application/x-www-form-urlencoded' },\n";
+      //   data =
+      //     "\theaders: { 'Content-Type': 'application/x-www-form-urlencoded' },\n" +
+      //     "  data: QS.stringify({\n";
+      // }
+      if (
+        consumes[0] === "multipart/form-data" ||
+        consumes[0] === "application/x-www-form-urlencoded"
+      ) {
+        headers = "\theaders: { 'Content-Type': 'multipart/form-data' },\n";
         data =
           "\theaders: { 'Content-Type': 'multipart/form-data' },\n" +
           "  data: {\n";
@@ -334,8 +329,16 @@ function genTemplate(path, api) {
       showParamConfig = true;
     }
     if (configObj.expandParams === "false") {
-      hasParams && (finalParams += "  params: paramConfig,\n");
-      hasData && (finalParams += "  data: paramConfig,\n");
+      const body = parameters.find((item) => item.in === "body");
+      hasParams && (finalParams += "  params: paramConfig.query,\n");
+      hasData &&
+        (finalParams += `  data: ${
+          consumes?.[0] === "multipart/form-data" ||
+          consumes?.[0] === "application/x-www-form-urlencoded"
+            ? "objToFormData(paramConfig.formData)"
+            : `paramConfig.body['${body.name}']`
+        },\n`);
+      finalParams += headers;
     } else {
       hasParams && (finalParams += params);
       hasData && (finalParams += data);
@@ -355,9 +358,14 @@ function genTemplate(path, api) {
   ${finalComment}*/
   export const ${name}${method.toUpperCase()} = (${
       showParamConfig
-        ? "paramConfig: " + name + method.toUpperCase() + "Props"
-        : "paramConfig?: " + name + method.toUpperCase() + "Props"
-    }, customConfig: CustomConfigProps = {}) => request({
+        ? "paramConfig: paths['" + path + "']['" + method + "']['parameters']"
+        : "paramConfig?: any"
+    }, customConfig: CustomConfigProps = {}) =>
+  request<${
+    responses["200"]
+      ? `paths['${path}']['${method}']['responses']['200']['schema']`
+      : "any"
+  }>({
     url: ${handledPath},
     method: '${method}',
   ${finalParams}...customConfig,\n});
@@ -405,10 +413,10 @@ function genFileByPath(fileName, contentTs, contentType, contentJs) {
   const typePath = `${configObj.tarDir}/${fileName}Types.ts`;
 
   if (configObj.fileType === "ts") {
-    createFile(tsPath, contentTs);
-    createFile(typePath, contentType);
+    createFile(tsPath, prettier.format(contentTs, { parser: "typescript" }));
+    // createFile(typePath, contentType);
   } else if (configObj.fileType === "js") {
-    createFile(jsPath, contentJs);
+    createFile(jsPath, prettier.format(contentJs));
   }
 }
 /**
@@ -416,11 +424,30 @@ function genFileByPath(fileName, contentTs, contentType, contentJs) {
  * @param {*} pathObj paths对象
  */
 function handleSwaggerApis(pathObj) {
-  let contentJs = `import request from './client';\n` + configObj.template;
-  let contentTs =
-    `import request, { RequestConfig } from './client';\nimport './${configObj.fileName}Types';\n` +
-    configObj.template +
-    "\ntype CustomConfigProps = RequestConfig; // 修改这里为自定义配置支持TS提示\n";
+  let contentJs = `import request from './client';\n${configObj.template}`;
+  // let contentTs =
+  //   `import request, { RequestConfig } from './client';\nimport './${configObj.fileName}Types';\n` +
+  //   configObj.template +
+  //   "\ntype CustomConfigProps = RequestConfig; // 修改这里为自定义配置支持TS提示\n";
+  let contentTs = `import { paths } from './schema';
+    import request, { RequestConfig } from './client';
+
+    function objToFormData(obj: any) {
+      const formData = new FormData();
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          const value = obj[key];
+          if (value instanceof File) {
+            formData.append(key, value, value.name);
+          } else {
+            formData.append(key, value);
+          }
+        }
+      }
+      return formData;
+    }
+
+    type CustomConfigProps = RequestConfig; // 修改这里为自定义配置支持TS提示\n${configObj.template}`;
   let contentType = `interface anyFields { [key: string]: any }`;
   // 如果有filter选项
   let reg;
@@ -449,57 +476,79 @@ function handleSwaggerApis(pathObj) {
   );
   console.log(`[接口数量]: ${count}`);
 }
+function requestApiMethod() {
+  request(config)
+    .then((data) => {
+      const pathObj = data.paths;
+      definitionsObj = data.definitions;
+      if (configObj.module === "true") {
+        // 如果module选项为true
+        let modules = {};
+        for (const path in pathObj) {
+          const moduleName = path.split("/")[1];
+          modules[moduleName] = {
+            ...modules[moduleName],
+            [path]: pathObj[path],
+          };
+        }
+        for (const moduleName in modules) {
+          count = 0;
+          configObj.fileName = moduleName;
+          handleSwaggerApis(modules[moduleName]);
+        }
+      } else {
+        handleSwaggerApis(pathObj);
+      }
+    })
+    .catch((err) => {
+      console.log("***************出错啦(-_-!)请重试或砸电脑*****************");
+      console.log(err);
+    })
+    .finally(() => {
+      /** 生成额外文件 */
+      if (["ts", "js"].includes(configObj.fileType)) {
+        if (configObj.client === "true") {
+          createFile(
+            `${configObj.tarDir}/client.${configObj.fileType}`,
+            fs.readFileSync(
+              _path.resolve(
+                __dirname,
+                `./snipeets/client.${configObj.fileType}`
+              ),
+              "utf-8"
+            )
+          );
+        }
+        if (configObj.mock === "true") {
+          createFile(
+            `${configObj.tarDir}/handsomeChar.js`,
+            fs.readFileSync(
+              _path.resolve(__dirname, "./snipeets/handsomeChar.js"),
+              "utf-8"
+            )
+          );
+          createFile(
+            `${configObj.tarDir}/mock.${configObj.fileType}`,
+            fs.readFileSync(
+              _path.resolve(__dirname, `./snipeets/mock.${configObj.fileType}`),
+              "utf-8"
+            )
+          );
+        }
+      }
+    });
+}
 
-request(config)
-  .then((data) => {
-    const pathObj = data.paths;
-    definitionsObj = data.definitions;
-    if (configObj.module === "true") {
-      // 如果module选项为true
-      let modules = {};
-      for (const path in pathObj) {
-        const moduleName = path.split("/")[1];
-        modules[moduleName] = { ...modules[moduleName], [path]: pathObj[path] };
-      }
-      for (const moduleName in modules) {
-        count = 0;
-        configObj.fileName = moduleName;
-        handleSwaggerApis(modules[moduleName]);
-      }
-    } else {
-      handleSwaggerApis(pathObj);
-    }
-  })
-  .catch((err) => {
-    console.log("***************出错啦(-_-!)请重试或砸电脑*****************");
-    console.log(err);
-  })
-  .finally(() => {
-    if (["ts", "js"].includes(configObj.fileType)) {
-      if (configObj.client === "true") {
-        createFile(
-          `${configObj.tarDir}/client.${configObj.fileType}`,
-          fs.readFileSync(
-            _path.resolve(__dirname, `./snipeets/client.${configObj.fileType}`),
-            "utf-8"
-          )
-        );
-      }
-      if (configObj.mock === "true") {
-        createFile(
-          `${configObj.tarDir}/handsomeChar.js`,
-          fs.readFileSync(
-            _path.resolve(__dirname, "./snipeets/handsomeChar.js"),
-            "utf-8"
-          )
-        );
-        createFile(
-          `${configObj.tarDir}/mock.${configObj.fileType}`,
-          fs.readFileSync(
-            _path.resolve(__dirname, `./snipeets/mock.${configObj.fileType}`),
-            "utf-8"
-          )
-        );
-      }
-    }
-  });
+async function requestSchema() {
+  if (configObj.fileType === "ts") {
+    const schema = await openapiTs(new URL(configObj.url));
+    createFile(`${configObj.tarDir}/schema.ts`, schema);
+  }
+}
+
+function main() {
+  requestApiMethod();
+  // requestSchema();
+}
+
+main();
