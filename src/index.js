@@ -171,18 +171,6 @@ function getParamsFields({
     temp = null;
   }
   for (const item of parameters) {
-    // if (parametersType === '[object Array]' && item.schema) {
-    //   if (item.schema.originalRef) {
-    //     getParamsFields({
-    //       parameters: definitionsObj[item.schema.originalRef].properties,
-    //       data,
-    //       params,
-    //       finalComment,
-    //       finalTypes,
-    //     });
-    //     continue;
-    //   }
-    // }
     if (item.in === "header") {
       continue;
     }
@@ -194,7 +182,6 @@ function getParamsFields({
       params += `\t\t'${item.name}': paramConfig['${item.name}'],\n`;
     }
     if (item.in === "body") {
-      // if (data.includes(`'${item.name}': paramConfig['${item.name}']`)) {
       if (data.includes(`...paramConfig['${item.name}'],`)) {
         continue;
       }
@@ -273,14 +260,6 @@ function genTemplate(path, api) {
       if (consumes[0] === "application/json") {
         data = "  data: {\n";
       }
-      // if (consumes[0] === "application/x-www-form-urlencoded") {
-      //   isJsonData = false;
-      //   headers =
-      //     "\theaders: { 'Content-Type': 'application/x-www-form-urlencoded' },\n";
-      //   data =
-      //     "\theaders: { 'Content-Type': 'application/x-www-form-urlencoded' },\n" +
-      //     "  data: QS.stringify({\n";
-      // }
       if (
         consumes[0] === "multipart/form-data" ||
         consumes[0] === "application/x-www-form-urlencoded"
@@ -298,11 +277,6 @@ function genTemplate(path, api) {
     try {
       searchKey = responses["200"].schema.originalRef;
     } catch (e) {}
-    // let finalResponse = getResponseFields(searchKey, {
-    //   contentJsDoc: '',
-    //   contentTypes: '',
-    //   contentTypesDoc: '',
-    // });
     if (!parameters) {
       parameters = [];
     }
@@ -362,12 +336,12 @@ function genTemplate(path, api) {
   ${finalComment}*/
   export const ${name}${method.toUpperCase()} = (${
       showParamConfig
-        ? "paramConfig: paths['" + path + "']['" + method + "']['parameters']"
+        ? "paramConfig: ParamsProps<paths['" + path + "']['" + method + "']>"
         : "paramConfig?: any"
     }, customConfig: CustomConfigProps = {}) =>
   request<${
     responses?.["200"]?.schema
-      ? `paths['${path}']['${method}']['responses']['200']['schema']`
+      ? `ResponseProps<paths['${path}']['${method}']>`
       : "any"
   }>({
     url: ${handledPath},
@@ -418,7 +392,6 @@ function genFileByPath(fileName, contentTs, contentType, contentJs) {
 
   if (configObj.fileType === "ts") {
     createFile(tsPath, prettier.format(contentTs, { parser: "typescript" }));
-    // createFile(typePath, contentType);
   } else if (configObj.fileType === "js") {
     createFile(jsPath, prettier.format(contentJs));
   }
@@ -428,30 +401,13 @@ function genFileByPath(fileName, contentTs, contentType, contentJs) {
  * @param {*} pathObj paths对象
  */
 function handleSwaggerApis(pathObj) {
-  let contentJs = `import request from './client';\n${configObj.template}`;
-  // let contentTs =
-  //   `import request, { RequestConfig } from './client';\nimport './${configObj.fileName}Types';\n` +
-  //   configObj.template +
-  //   "\ntype CustomConfigProps = RequestConfig; // 修改这里为自定义配置支持TS提示\n";
+  let contentJs = `import request from './client';
+  import { objToFormData } from './utils';
+  ${configObj.template}`;
   let contentTs = `import { paths } from './schema';
-    import request, { RequestConfig } from './client';
-
-    function objToFormData(obj: any) {
-      const formData = new FormData();
-      for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-          const value = obj[key];
-          if (value instanceof File) {
-            formData.append(key, value, value.name);
-          } else {
-            formData.append(key, value);
-          }
-        }
-      }
-      return formData;
-    }
-
-    type CustomConfigProps = RequestConfig; // 修改这里为自定义配置支持TS提示\n${configObj.template}`;
+    import request from './client';
+    import { objToFormData, type ParamsProps, type ResponseProps, type CustomConfigProps } from './utils';
+    ${configObj.template}`;
   let contentType = `interface anyFields { [key: string]: any }`;
   // 如果有filter选项
   let reg;
@@ -539,6 +495,14 @@ function requestApiMethod() {
             )
           );
         }
+        /** utils文件默认生成 */
+        createFile(
+          `${configObj.tarDir}/utils.${configObj.fileType}`,
+          fs.readFileSync(
+            _path.resolve(__dirname, `./snipeets/utils.${configObj.fileType}`),
+            "utf-8"
+          )
+        );
       }
     });
 }

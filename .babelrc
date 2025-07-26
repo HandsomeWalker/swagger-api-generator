@@ -1,0 +1,9 @@
+{
+  "presets": [
+    ["@babel/preset-env", {
+      "targets": {
+        "node": "14"  // 目标 Node 版本，或使用 "defaults"
+      }
+    }]
+  ]
+}
