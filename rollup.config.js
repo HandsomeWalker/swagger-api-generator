@@ -7,7 +7,7 @@ export default {
   input: "src/index.js",
   output: {
     file: "dist/index.js",
-    format: "cjs", // CommonJS 格式；可以换成 'esm' 支持 ESM
+    format: "esm", // cjs esm
   },
   plugins: [
     copy({
