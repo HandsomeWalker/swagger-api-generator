@@ -18,24 +18,12 @@ swagger接口前端代码生成命令行工具，支持ts和js，适用于v2文�
 # 生成结果
 ```typescript
 import { paths } from "./schema";
-import request, { RequestConfig } from "./client";
-
-function objToFormData(obj: any) {
-  const formData = new FormData();
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      const value = obj[key];
-      if (value instanceof File) {
-        formData.append(key, value, value.name);
-      } else {
-        formData.append(key, value);
-      }
-    }
-  }
-  return formData;
-}
-
-type CustomConfigProps = RequestConfig; // 修改这里为自定义配置支持TS提示
+import request, {
+  type ParamsProps,
+  type ResponseProps,
+  type CustomConfigProps,
+} from "./client";
+import { objToFormData } from "./utils";
 
 /**
  * pet-uploads an image
@@ -44,14 +32,29 @@ type CustomConfigProps = RequestConfig; // 修改这里为自定义配置支持T
  * @param {any} file description: file to upload | required: false | type: file
  */
 export const petByPetIdUploadImagePOST = (
-  paramConfig: paths["/pet/{petId}/uploadImage"]["post"]["parameters"],
+  paramConfig: ParamsProps<paths["/pet/{petId}/uploadImage"]["post"]>,
   customConfig: CustomConfigProps = {}
 ) =>
-  request<paths["/pet/{petId}/uploadImage"]["post"]["responses"]["200"]["schema"]>({
+  request<ResponseProps<paths["/pet/{petId}/uploadImage"]["post"]>>({
     url: `/pet/${paramConfig.path["petId"]}/uploadImage`,
     method: "post",
     data: objToFormData(paramConfig.formData),
     headers: { "Content-Type": "multipart/form-data" },
+    ...customConfig,
+  });
+
+/**
+ * pet-Add a new pet to the store
+ * @param {any} body description: Pet object that needs to be added to the store | required: true | type: undefined
+ */
+export const petPOST = (
+  paramConfig: ParamsProps<paths["/pet"]["post"]>,
+  customConfig: CustomConfigProps = {}
+) =>
+  request<any>({
+    url: "/pet",
+    method: "post",
+    data: paramConfig.body["body"],
     ...customConfig,
   });
 ```

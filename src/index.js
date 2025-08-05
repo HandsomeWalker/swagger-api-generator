@@ -387,8 +387,8 @@ function handleSwaggerApis(pathObj) {
   import { objToFormData } from './utils';
   ${configObj.template}`;
   let contentTs = `import { paths } from './schema';
-    import request from './client';
-    import { objToFormData, type ParamsProps, type ResponseProps, type CustomConfigProps } from './utils';
+    import request, { type ParamsProps, type ResponseProps, type CustomConfigProps } from './client';
+    import { objToFormData } from './utils';
     ${configObj.template}`;
   let contentType = `interface anyFields { [key: string]: any }`;
   // 如果有filter选项
